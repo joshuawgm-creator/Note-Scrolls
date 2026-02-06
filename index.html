@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Personal Notes</title>
+
+    <!-- Lexend Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Lexend", sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+
+        /* TITLE */
+        .title {
+            color: white;
+            margin-bottom: 20px;
+        }
+
+        /* LOGIN */
+        .login-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .login-form {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            width: 320px;
+        }
+
+        .login-form input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+        }
+
+        .create-account button {
+            margin-top: 10px;
+            padding: 12px;
+            width: 320px;
+            cursor: pointer;
+        }
+
+        /* NOTES */
+        .notes-container {
+            display: none;
+            flex-direction: column;
+            height: 100vh;
+            background: #f4f4f4;
+        }
+
+        .toolbar {
+            display: flex;
+            justify-content: center;
+            background: #e9ecef;
+            padding: 8px;
+            gap: 5px;
+        }
+
+        .toolbar button {
+            padding: 6px 10px;
+            cursor: pointer;
+        }
+
+        .toolbar button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* TABS */
+        .tabs-wrapper {
+            display: flex;
+            background: #e9ecef;
+            border-bottom: 1px solid #ccc;
+            overflow: hidden;
+        }
+
+        .tabs {
+            display: flex;
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        .tab {
+            padding: 6px 10px; /* Reduced padding for smaller tabs */
+            background: #f8f9fa;
+            border-right: 1px solid #ccc;
+            cursor: pointer;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            font-size: 14px; /* Smaller font */
+        }
+
+        .tab.active {
+            background: white;
+            font-weight: bold;
+        }
+
+        .tab-delete {
+            margin-left: 8px;
+            color: red;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* DROPDOWN */
+        .tabs-more {
+            padding: 0 10px; /* Adjusted padding */
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .tabs-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            min-width: 180px;
+            background: white;
+            border: 1px solid #ccc;
+            display: none;
+            flex-direction: column;
+            z-index: 999;
+        }
+
+        .tabs-dropdown.show {
+            display: flex;
+        }
+
+        .tabs-dropdown .tab {
+            border-bottom: 1px solid #eee;
+            border-right: none;
+        }
+
+        /* NOTEPAD */
+        .notepad {
+            flex: 1;
+            width: 95%;
+            margin: 20px auto;
+            padding: 15px;
+            background: white;
+            border: 1px solid #ccc;
+            overflow: auto;
+        }
+
+        /* IMAGES */
+        .notepad img {
+            position: relative;
+            cursor: move;
+            max-width: 100%;
+            display: block;
+        }
+
+        .resize-handle {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 14px;
+            height: 14px;
+            background: #007bff;
+            cursor: nw-resize;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-container" class="login-container">
+    <h1 class="title">Note Scrolls</h1>
+    <form class="login-form">
+        <input id="username" type="text" placeholder="Username" required>
+        <input id="password" type="password" placeholder="Password" required>
+    </form>
+    <div class="create-account">
+        <button id="create-account-btn">Create New Account</button>
+    </div>
+</div>
+
+<!-- NOTES APP -->
+<div id="notes-container" class="notes-container">
+
+    <!-- TOOLBAR -->
+    <div class="toolbar">
+        <button id="bold-btn">B</button>
+        <button id="underline-btn">U</button>
+        <button id="italic-btn">I</button>
+        <button id="link-btn">🔗</button>
+        <button id="image-btn">🖼️</button>
+        <button id="increase-font-btn">+</button>
+        <button id="decrease-font-btn">-</button>
+        <button id="save-btn">💾</button>
+        <button id="add-tab-btn">＋</button>
+    </div>
+
+    <!-- TABS WITH OVERFLOW -->
+    <div class="tabs-wrapper">
+        <div class="tabs" id="tabs"></div>
+
+        <div class="tabs-more hidden" id="tabs-more">
+            ⋯
+            <div class="tabs-dropdown" id="tabs-dropdown"></div>
+        </div>
+    </div>
+
+    <!-- NOTEPAD -->
+    <div id="notepad" class="notepad" contenteditable="true"></div>
+</div>
+
+<script>
+// ELEMENTS
+const loginContainer = document.getElementById("login-container");
+const notesContainer = document.getElementById("notes-container");
+const usernameInput = document.getElementById("username");
+const passwordInput = document.getElementById("password");
+const createAccountBtn = document.getElementById("create-account-btn");
+
+const notepad = document.getElementById("notepad");
+const tabsContainer = document.getElementById("tabs");
+const moreBtn = document.getElementById("tabs-more");
+const dropdown = document.getElementById("tabs-dropdown");
+
+const boldBtn = document.getElementById("bold-btn");
+const underlineBtn = document.getElementById("underline-btn");
+const italicBtn = document.getElementById("italic-btn");
+const linkBtn = document.getElementById("link-btn");
+const imageBtn = document.getElementById("image-btn");
+const increaseFontBtn = document.getElementById("increase-font-btn");
+const decreaseFontBtn = document.getElementById("decrease-font-btn");
+const saveBtn = document.getElementById("save-btn");
+const addTabBtn = document.getElementById("add-tab-btn");
+
+// STATE
+let users = JSON.parse(localStorage.getItem("users")) || {};
+let currentUser = null;
+let currentTab = 0;
+let tabs = [{ name: "📝", content: "<p>Welcome new user! You can save notes here, it's safe and private. Feel free to create new tabs for your important notes.<br><strong>Reminder: DO NOT SAVE FILES ON THIS TAB. Use other tabs for your content.</strong></p>" }];
+
+// AUTO LOGIN
+function tryLogin() {
+    const u = usernameInput.value.trim();
+    const p = passwordInput.value.trim();
+    if (u && p && users[u] === p) {
+        login(u);
+    }
+}
+
+usernameInput.addEventListener("input", tryLogin);
+passwordInput.addEventListener("input", tryLogin);
+
+// CREATE ACCOUNT
+createAccountBtn.addEventListener("click", () => {
+    const u = usernameInput.value.trim();
+    const p = passwordInput.value.trim();
+    if (!u || !p || users[u]) {
+        alert("Invalid or existing username");
+        return;
+    }
+
+    users[u] = p;
+    localStorage.setItem("users", JSON.stringify(users));
+    localStorage.setItem(`${u}_tabs`, JSON.stringify(tabs));
+    login(u);
+});
+
+// LOGIN
+function login(user) {
+    currentUser = user;
+    loginContainer.style.display = "none";
+    notesContainer.style.display = "flex";
+
+    tabs = JSON.parse(localStorage.getItem(`${user}_tabs`)) || tabs;
+    currentTab = 0;
+    loadTab(0);
+}
+
+// TABS
+function renderTabs() {
+    tabsContainer.innerHTML = "";
+    dropdown.innerHTML = "";
+    moreBtn.classList.add("hidden");
+
+    tabs.forEach((tab, index) => {
+        const tabEl = document.createElement("div");
+        tabEl.className = "tab" + (index === currentTab ? " active" : "");
+        tabEl.textContent = tab.name;
+
+        if (index > 0) {
+            const del = document.createElement("span");
+            del.className = "tab-delete";
+            del.textContent = "×";
+            del.onclick = (e) => {
+                e.stopPropagation();
+                deleteTab(index);
+            };
+            tabEl.appendChild(del);
+        }
+
+        tabEl.onclick = () => loadTab(index);
+        tabsContainer.appendChild(tabEl);
+    });
+
+    requestAnimationFrame(handleTabOverflow);
+}
+
+function handleTabOverflow() {
+    let totalWidth = 0;
+    const maxWidth = tabsContainer.parentElement.offsetWidth - moreBtn.offsetWidth;
+
+    [...tabsContainer.children].forEach(tab => {
+        totalWidth += tab.offsetWidth;
+        if (totalWidth > maxWidth) {
+            dropdown.appendChild(tab);
+            moreBtn.classList.remove("hidden");
+        }
+    });
+}
+
+function loadTab(index) {
+    tabs[currentTab].content = notepad.innerHTML;
+    currentTab = index;
+    notepad.innerHTML = tabs[index].content;
+    // Make the first tab uneditable
+    notepad.contentEditable = (index !== 0);
+    // Disable toolbar buttons for first tab
+    const toolbarButtons = [boldBtn, underlineBtn, italicBtn, linkBtn, imageBtn, increaseFontBtn, decreaseFontBtn, saveBtn];
+    toolbarButtons.forEach(btn => btn.disabled = (index === 0));
+    renderTabs();
+    // Re-attach image handlers after loading content
+    attachImageHandlers();
+}
+
+function deleteTab(index) {
+    // Save current content before deleting
+    tabs[currentTab].content = notepad.innerHTML;
+    // Delete the tab
+    tabs.splice(index, 1);
+    // Adjust currentTab
+    if (currentTab >= index) {
+        currentTab = Math.max(0, currentTab - 1);
+    }
+    // Load the new current tab without saving again
+    notepad.innerHTML = tabs[currentTab].content;
+    notepad.contentEditable = (currentTab !== 0);
+    const toolbarButtons = [boldBtn, underlineBtn, italicBtn, linkBtn, imageBtn, increaseFontBtn, decreaseFontBtn, saveBtn];
+    toolbarButtons.forEach(btn => btn.disabled = (currentTab === 0));
+    renderTabs();
+    attachImageHandlers();
+}
+
+addTabBtn.addEventListener("click", () => {
+    const name = prompt("Tab name?");
+    if (!name) return;
+    tabs.push({ name, content: "" });
+    loadTab(tabs.length - 1);
+});
+
+saveBtn.addEventListener("click", () => {
+    tabs[currentTab].content = notepad.innerHTML;
+    localStorage.setItem(`${currentUser}_tabs`, JSON.stringify(tabs));
+    alert("Notes saved!");
+});
+
+// EDITOR & SHORTCUTS
+boldBtn.addEventListener("click", () => document.execCommand("bold"));
+underlineBtn.addEventListener("click", () => document.execCommand("underline"));
+italicBtn.addEventListener("click", () => document.execCommand("italic"));
+
+increaseFontBtn.addEventListener("click", () =>
+    document.execCommand("fontSize", false, "4")
+);
+
+decreaseFontBtn.addEventListener("click", () =>
+    document.execCommand("fontSize", false, "2")
+);
+
+linkBtn.addEventListener("click", () => {
+    const url = prompt("Enter URL:");
+    if (url) document.execCommand("createLink", false, url);
+});
+
+imageBtn.addEventListener("click", () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+
+    input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = () => {
+            const img = document.createElement("img");
+            img.src = reader.result;
+            img.style.position = "relative";
+            img.style.width = "200px"; // Default size
+            img.style.height = "auto";
+
+            const handle = document.createElement("div");
+            handle.className = "resize-handle";
+            img.appendChild(handle);
+
+            notepad.appendChild(img);
+            attachImageHandlers();
+        };
+        reader.readAsDataURL(file);
+    };
+
+    input.click();
+});
+
+// KEYBOARD SHORTCUTS
+document.addEventListener("keydown", (e) => {
+    if (!e.ctrlKey || currentTab === 0) return;
+
+    switch (e.key.toLowerCase()) {
+        case "b":
+            e.preventDefault();
+            document.execCommand("bold");
+            break;
+        case "u":
+            e.preventDefault();
+            document.execCommand("underline");
+            break;
+        case "i":
+            e.preventDefault();
+            document.execCommand("italic");
+            break;
+        case "k":
+            e.preventDefault();
+            linkBtn.click();
+            break;
+        case "s":
+            e.preventDefault();
+            saveBtn.click();
+            break;
+    }
+});
+
+// DROPDOWN TOGGLE
+moreBtn.addEventListener("click", () => {
+    dropdown.classList.toggle("show");
+});
+
+// IMAGE DRAGGING AND RESIZING
+function attachImageHandlers() {
+    const images = notepad.querySelectorAll("img");
+    images.forEach(img => {
+        // Skip if already has handlers (to avoid duplicates)
+        if (img.dataset.handlersAttached) return;
+        img.dataset.handlersAttached = true;
+
+        let isDragging = false;
+        let isResizing = false;
+        let startX, startY, startWidth, startHeight;
+
+        // Ensure position relative for dragging
+        img.style.position = "relative";
+
+        // Add resize handle if not present
+        if (!img.querySelector(".resize-handle")) {
+            const handle = document.createElement("div");
+            handle.className = "resize-handle";
+            img.appendChild(handle);
+        }
+
+        img.addEventListener("mousedown", (e) => {
+            if (e.target.classList.contains("resize-handle")) {
+                isResizing = true;
+                startX = e.clientX;
+                startY = e.clientY;
+                startWidth = img.offsetWidth;
+                startHeight = img.offsetHeight;
+            } else {
+                isDragging = true;
+                startX = e.clientX - img.offsetLeft;
+                startY = e.clientY - img.offsetTop;
+            }
+            e.preventDefault();
+        });
+
+        document.addEventListener("mousemove", (e) => {
+            if (isDragging) {
+                img.style.left = (e.clientX - startX) + "px";
+                img.style.top = (e.clientY - startY) + "px";
+                img.style.position = "absolute";
+            } else if (isResizing) {
+                const newWidth = startWidth + (e.clientX - startX);
+                const newHeight = startHeight + (e.clientY - startY);
+                img.style.width = newWidth + "px";
+                img.style.height = newHeight + "px";
+            }
+        });
+
+        document.addEventListener("mouseup", () => {
+            isDragging = false;
+            isResizing = false;
+        });
+    });
+}
+
+// Initial attach on load
+attachImageHandlers();
+</script>
+</body>
+</html>
