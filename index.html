@@ -24,7 +24,8 @@
         /* TITLE */
         .title {
             color: white;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
+            font-size: 2.5em; /* Made larger for emphasis */
         }
 
         /* LOGIN */
@@ -38,22 +39,30 @@
 
         .login-form {
             background: white;
-            padding: 30px;
+            padding: 20px; /* Reduced padding for compression */
             border-radius: 12px;
-            width: 320px;
+            width: 280px; /* Slightly smaller width for compression */
         }
 
         .login-form input {
             width: 100%;
-            padding: 12px;
-            margin: 10px 0;
+            padding: 10px; /* Reduced padding */
+            margin: 8px 0; /* Reduced margin */
         }
 
         .create-account button {
-            margin-top: 10px;
-            padding: 12px;
-            width: 320px;
+            margin-top: 8px; /* Reduced margin */
+            padding: 10px; /* Reduced padding */
+            width: 280px; /* Matches form width */
             cursor: pointer;
+        }
+
+        .data-note {
+            color: white;
+            font-size: 12px; /* Made smaller than title (title is 2.5em ~40px, this is 12px) */
+            text-align: center;
+            margin-top: 15px; /* Reduced margin */
+            max-width: 280px; /* Matches form width */
         }
 
         /* NOTES */
@@ -188,14 +197,15 @@
 
 <!-- LOGIN -->
 <div id="login-container" class="login-container">
-    <h1 class="title">Note Scrolls</h1>
+    <h1 class="title">Note Scrolls 📜</h1>
     <form class="login-form">
         <input id="username" type="text" placeholder="Username" required>
         <input id="password" type="password" placeholder="Password" required>
     </form>
     <div class="create-account">
-        <button id="create-account-btn">Create New Account</button>
+        <button id="create-account-btn">👤 Create New Account</button>
     </div>
+    <p class="data-note">⚠️ Reminder: Do not use incognito mode or clear browser history, as it will delete your notes.</p>
 </div>
 
 <!-- NOTES APP -->
@@ -207,11 +217,10 @@
         <button id="underline-btn">U</button>
         <button id="italic-btn">I</button>
         <button id="link-btn">🔗</button>
-        <button id="image-btn">🖼️</button>
-        <button id="increase-font-btn">+</button>
-        <button id="decrease-font-btn">-</button>
+        <button id="increase-font-btn">📈 +</button>
+        <button id="decrease-font-btn">📉 -</button>
         <button id="save-btn">💾</button>
-        <button id="add-tab-btn">＋</button>
+        <button id="add-tab-btn">➕</button>
     </div>
 
     <!-- TABS WITH OVERFLOW -->
@@ -245,7 +254,6 @@ const boldBtn = document.getElementById("bold-btn");
 const underlineBtn = document.getElementById("underline-btn");
 const italicBtn = document.getElementById("italic-btn");
 const linkBtn = document.getElementById("link-btn");
-const imageBtn = document.getElementById("image-btn");
 const increaseFontBtn = document.getElementById("increase-font-btn");
 const decreaseFontBtn = document.getElementById("decrease-font-btn");
 const saveBtn = document.getElementById("save-btn");
@@ -255,7 +263,7 @@ const addTabBtn = document.getElementById("add-tab-btn");
 let users = JSON.parse(localStorage.getItem("users")) || {};
 let currentUser = null;
 let currentTab = 0;
-let tabs = [{ name: "📝", content: "<p>Welcome new user! You can save notes here, it's safe and private. Feel free to create new tabs for your important notes.<br><strong>Reminder: DO NOT SAVE FILES ON THIS TAB. Use other tabs for your content.</strong></p>" }];
+let tabs = [{ name: "📝", content: "<p>Welcome new user! 👋 You can save notes here, it's safe and private. Feel free to create new tabs for your important notes.<br><strong>Reminder: DO NOT SAVE FILES ON THIS TAB. Use other tabs for your content. 📁</strong></p>" }];
 
 // AUTO LOGIN
 function tryLogin() {
@@ -344,7 +352,7 @@ function loadTab(index) {
     // Make the first tab uneditable
     notepad.contentEditable = (index !== 0);
     // Disable toolbar buttons for first tab
-    const toolbarButtons = [boldBtn, underlineBtn, italicBtn, linkBtn, imageBtn, increaseFontBtn, decreaseFontBtn, saveBtn];
+    const toolbarButtons = [boldBtn, underlineBtn, italicBtn, linkBtn, increaseFontBtn, decreaseFontBtn, saveBtn];
     toolbarButtons.forEach(btn => btn.disabled = (index === 0));
     renderTabs();
     // Re-attach image handlers after loading content
@@ -363,7 +371,7 @@ function deleteTab(index) {
     // Load the new current tab without saving again
     notepad.innerHTML = tabs[currentTab].content;
     notepad.contentEditable = (currentTab !== 0);
-    const toolbarButtons = [boldBtn, underlineBtn, italicBtn, linkBtn, imageBtn, increaseFontBtn, decreaseFontBtn, saveBtn];
+    const toolbarButtons = [boldBtn, underlineBtn, italicBtn, linkBtn, increaseFontBtn, decreaseFontBtn, saveBtn];
     toolbarButtons.forEach(btn => btn.disabled = (currentTab === 0));
     renderTabs();
     attachImageHandlers();
@@ -398,36 +406,6 @@ decreaseFontBtn.addEventListener("click", () =>
 linkBtn.addEventListener("click", () => {
     const url = prompt("Enter URL:");
     if (url) document.execCommand("createLink", false, url);
-});
-
-imageBtn.addEventListener("click", () => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "image/*";
-
-    input.onchange = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = () => {
-            const img = document.createElement("img");
-            img.src = reader.result;
-            img.style.position = "relative";
-            img.style.width = "200px"; // Default size
-            img.style.height = "auto";
-
-            const handle = document.createElement("div");
-            handle.className = "resize-handle";
-            img.appendChild(handle);
-
-            notepad.appendChild(img);
-            attachImageHandlers();
-        };
-        reader.readAsDataURL(file);
-    };
-
-    input.click();
 });
 
 // KEYBOARD SHORTCUTS
