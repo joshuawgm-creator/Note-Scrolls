@@ -168,6 +168,7 @@
             background: white;
             border: 1px solid #ccc;
             overflow: auto;
+            position: relative; /* Added for absolute positioning of images */
         }
 
         /* IMAGES */
@@ -449,6 +450,9 @@ function attachImageHandlers() {
         if (img.dataset.handlersAttached) return;
         img.dataset.handlersAttached = true;
 
+        img.draggable = false;
+        img.style.userSelect = "none";
+
         let isDragging = false;
         let isResizing = false;
         let startX, startY, startWidth, startHeight;
@@ -472,16 +476,18 @@ function attachImageHandlers() {
                 startHeight = img.offsetHeight;
             } else {
                 isDragging = true;
-                startX = e.clientX - img.offsetLeft;
-                startY = e.clientY - img.offsetTop;
+                const notepadRect = notepad.getBoundingClientRect();
+                startX = e.clientX - notepadRect.left - img.offsetLeft;
+                startY = e.clientY - notepadRect.top - img.offsetTop;
             }
             e.preventDefault();
         });
 
         document.addEventListener("mousemove", (e) => {
             if (isDragging) {
-                img.style.left = (e.clientX - startX) + "px";
-                img.style.top = (e.clientY - startY) + "px";
+                const notepadRect = notepad.getBoundingClientRect();
+                img.style.left = (e.clientX - notepadRect.left - startX) + "px";
+                img.style.top = (e.clientY - notepadRect.top - startY) + "px";
                 img.style.position = "absolute";
             } else if (isResizing) {
                 const newWidth = startWidth + (e.clientX - startX);
@@ -497,6 +503,12 @@ function attachImageHandlers() {
         });
     });
 }
+
+// MutationObserver to attach handlers to newly inserted images
+const observer = new MutationObserver(() => {
+    attachImageHandlers();
+});
+observer.observe(notepad, { childList: true, subtree: true });
 
 // Initial attach on load
 attachImageHandlers();
